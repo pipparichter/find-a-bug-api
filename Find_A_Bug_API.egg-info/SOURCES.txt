@@ -1,9 +1,0 @@
-LICENSE
-README.md
-setup.py
-Find_A_Bug_API.egg-info/PKG-INFO
-Find_A_Bug_API.egg-info/SOURCES.txt
-Find_A_Bug_API.egg-info/dependency_links.txt
-Find_A_Bug_API.egg-info/requires.txt
-Find_A_Bug_API.egg-info/top_level.txt
-fabapi/__init__.py
