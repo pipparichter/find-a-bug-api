@@ -1,0 +1,8 @@
+Metadata-Version: 2.1
+Name: Find-A-Bug-API
+Version: 0.1
+Summary: A Python API for interacting with the Find-A-Bug database.
+Home-page: https://github.com/pipparichter/find-a-bug-api
+Author: Philippa Richter
+Author-email: prichter@caltech.edu
+License-File: LICENSE
