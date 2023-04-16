@@ -9,145 +9,168 @@ import io
 host = 'microbes.gps.caltech.edu:8000'
 
 
-# TODO: Some kind of check function which makes sure all the specified options
-# are OK. Not sure if I should put it in this file, or a module closer to the
-# back end. Maybe both.
-
-
-def where_to_url(where):
+def generate_url(cols, filters, type_, page=0):
     '''
-    Converts the set of options specified in the 'where' keyword argument into
-    string for the URL.
+    Converts the set of options specified in the 'where' keyword argument, as
+    well as the requested columns, into a URL, to be sent to the HTTP server. 
+
+    args:
+        : cols (list of str): A list specifying the columns to grab. 
+        : filters (dict): A dictionary of the form {col:[(op, val), ...]} or
+            {col:[val]}. Each each col and op is a string, and the val can be a
+            number or a string. 
+        : type_ (str): The type of request to send.
+
+    kwargs:
+        : page (int): The page to grab from the database. Default page size is
+            100, and the default page number is zero (first page). 
     '''
-    operator_map = {'=':'eq', '>':'gt', '<':'lt', '<=':'le', '>=':'ge'}
-    options = [] 
+    headers = {'page':str(page)}
 
-    for field in where.keys():
-        # If a list is given in the options, then join as an or statement.
-        if type(where[field]) == list:
-            
-            for val in where[field]:
-                if type(val) == tuple:
-                    operator, filter_ = val
-                else: # In this case, assume the specified string is something to match
-                    operator, filter_ = 'eq', val
-    
-                # Make sure the operator is in the correct form for the URL.
-                operator = operator_map.get(operator, operator)
-                options.append(f'{field}={operator};{filter_}')
-        
-        else: # If only one thing is specified.
-            val = where[field]
-
-            if type(val) == tuple:
-                operator, filter_ = val
+    # If multiple cols are specified, join as a list. 
+    headers['cols'] = ','.join(cols)
+ 
+    filter_list = []
+    for col in filters.keys():
+        for filter_ in filters[col]:
+            if type(filter_) == tuple:
+                op, val = filter_
             else: # In this case, assume the specified string is something to match
-                operator, filter_ = 'eq', val
-            
+                op, val = '=', filter_
+
             # Make sure the operator is in the correct form for the URL.
-            operator = operator_map.get(operator, operator)
-            options.append(f'{field}={operator};{filter_}')
+            filter_list.append(f'{col};{op};{val}')
+    headers['filters'] = ','.join(filter_list)
 
-    # Join the options according to URL format and return.
-    return '+'.join(options)
-
-def info():
-    '''
-    '''
+    return f'http://{host}/{type_}', headers
 
 
-def to_df(result):
+def to_df(response, print_sql_query=False):
     '''
-    Convert a result returned by the get function into a pandas DataFrame. 
+    Parse the text response received from the HTTP server. Converts the data
+    received into a pd.DataFrame object.  
+
+    args:
+        : response (requests.Response): The response from the HTTP server. 
+    
+    kwargs:
+        : print_sql_query (bool): Whether or not to print the raw SQL query sent to
+            the database. 
     '''
-    result = result.split('\n')
+    response = response.text.split('\n')
     start = None
-    for i, row in enumerate(result):
-        if '*' in row:
+    for i, row in enumerate(response):
+        if '-' in row:
             start = i + 1
             break
+    
+    if print_sql_query:
+        sql_query = response[2:start - 1]
+        print('\n'.join(sql_query))    
 
-    cols = result[start].split(',')
-    csv = result[i + 1]
-    df = pd.read_csv(io.StringIO(csv), sep=',', header=None, names=cols)
+    cols = response[start].split(',')
+    csv = '\n'.join(response[start + 1:])
+    df = pd.read_csv(io.StringIO(csv), sep=',', names=cols)
 
     return df
 
 
-def get(fields, where={}, verbose=True):
-    '''
-    Send a query to the Find-A-Bug Flask app. 
+# TODO: Will need to manually create an index for this. Something like, "CREATE
+# idx_ko ON TABLE... 
 
-    args:
-        : fields (str or list): Either a single field or a list of fields for
-            which to retrieve information. 
-    kwargs:
-        : where (dict): Specifies search options. Some format options for the
-            key, value pairs are as follows:
-            (1) 'ko':'KO123'
-            (2) 'ko':['KO123', 'KO456'] retrieves all fields where the KO group
-              matches EITHER of the specified groups. 
-            (3) 'threshold':('>', 500)
-            (4) 'threshold':[('>', 500), ('<', 1000)]
-        : verbose (bool): True by default. Whether or not to print the
-            constructed URL.
+def get_by_ko(ko,
+        gene_name=True,
+        genome_id=False,
+        page=0,
+        as_df=True):
     '''
-    # If multiple fields are specified, join as a list. 
-    if type(fields) == list:
-        fields = '+'.join(fields)
+    '''
+    # Can be either be a string or a list of strings; make sure it's a list. 
+    if type(ko) == str:
+        ko = [ko]
     
-    # Convert the specified options into a URL string. 
-    options = where_to_url(where)
+    # Generate the list of columns to grab from the database. 
+    cols = ['ko']
+    if gene_name:
+        cols.append('gene_name')
+    if genome_id:
+        cols.append('genome_id')
+    if len(cols) < 1:
+        raise ValueError('At least one column must be specified.')
+    
+    url, headers = generate_url(cols, {'ko':ko}, 'get', page=page)
+    response = requests.get(url, headers=headers)
+    
+    if as_df:
+        return to_df(response, print_sql_query=True)
+    else:
+        return response
 
-    url = f'http://{host}/{fields}/{options}'
+
+def get_by_gene_name(gene_name, 
+        genome_id=True, 
+        sequence=True,
+        page=0,
+        as_df=True):
+    '''
+    '''
+    # Can be either be a string or a list of strings; make sure it's a list. 
+    if type(gene_name) == str:
+        gene_name = [gene_name]
+    
+    cols = ['gene_name']
+    if genome_id:
+        cols.append('genome_id')
+    if sequence:
+        cols.append('sequence')
+
+    url, headers = generate_url(cols, {'gene_name':gene_name}, 'get', page=page)
+    response = requests.get(url, headers=headers)
+
+    if as_df:
+        return to_df(response, print_sql_query=True)
+    else:
+        return response
+
+
+def get_by_genome_id(genome_id, 
+        gtdb_taxonomy=True, 
+        ncbi_taxonomy=False,
+        ssu_gg_taxonomy=False,
+        as_df=True,
+        page=0):
+    '''
+    '''
+    # Can be either be a string or a list of strings; make sure it's a list. 
+    if type(genome_id) == str:
+        genome_id = [genome_id]
+ 
+    cols = ['genome_id']
+
+    taxonomy = ['domain', 'phylum', 'class', 'order', 'genus', 'species']
+    if gtdb_taxonomy:
+        cols += [f'gtdb_{t}' for t in taxonomy]
+    if ncbi_taxonomy:
+        cols += [f'ncbi_{t}' for t in taxonomy]
+    if ssu_gg_taxonomy:
+        cols += [f'ssu_gg_{t}' for t in taxonomy]
+
+    url, headers = generate_url(cols, {'gene_name':genome_id}, 'get', page=page)
+    response = requests.get(url, headers=headers)
+    
+    if as_df:
+        return to_df(response, print_sql_query=True)
+    else:
+        return response
+
+def info():
+    '''
+    Returns information about the database, like which tables are present and
+    the columns contained in these tables. 
+    '''
+    url = f'http://{host}/info'
     result = requests.get(url).text
-    
-    if verbose:
-        print(f'GET {url}')
 
     return result
 
 
-def count(fields, where={}, verbose=True):
-    '''
-
-    args:
-        : fields (str or list): Either a single field or a list of fields for
-            which to retrieve information. 
-    kwargs:
-        : where (dict): Specifies search options. Some format options for the
-            key, value pairs are as follows:
-            (1) 'ko':'KO123'
-            (2) 'ko':['KO123', 'KO456'] retrieves all fields where the KO group
-              matches EITHER of the specified groups. 
-            (3) 'threshold':('>', 500)
-            (4) 'threshold':[('>', 500), ('<', 1000)]
-        : verbose (bool): True by default. Whether or not to print the
-            constructed URL.
-    '''
-    # If multiple fields are specified, join as a list. 
-    if type(fields) == list:
-        fields = '+'.join(fields)
-    
-    # Convert the specified options into a URL string. 
-    options = where_to_url(where)
-
-    url = f'http://{host}/{fields}/{options}/count'
-    result = requests.get(url).text
-    
-    if verbose:
-        print(f'GET {url}')
-
-    return result
-
-
-def get_genes_with_score_over_threshold(annotation='kegg'):
-    '''
-    '''
-    pass
-
-
-def get_genes_in_ko_group(ko):
-    '''
-    '''
-    pass
