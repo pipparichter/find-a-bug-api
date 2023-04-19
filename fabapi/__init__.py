@@ -9,7 +9,7 @@ import io
 host = 'microbes.gps.caltech.edu:8000'
 
 
-def generate_url(cols, filters, type_, page=0):
+def generate_url(cols, filters, type_, page=None):
     '''
     Converts the set of options specified in the 'where' keyword argument, as
     well as the requested columns, into a URL, to be sent to the HTTP server. 
@@ -25,7 +25,11 @@ def generate_url(cols, filters, type_, page=0):
         : page (int): The page to grab from the database. Default page size is
             100, and the default page number is zero (first page). 
     '''
-    headers = {'page':str(page)}
+    # Include page information 
+    if page is not None:
+        headers = {'page':str(page)}
+    else: 
+        headers = {}
 
     # If multiple cols are specified, join as a list. 
     headers['cols'] = ','.join(cols)
@@ -81,9 +85,9 @@ def to_df(response, print_sql_query=False):
 def get_by_ko(ko,
         gene_name=True,
         genome_id=False,
-        page=0,
         as_df=True):
     '''
+    Gets all results from the database for a particular KO group. 
     '''
     # Can be either be a string or a list of strings; make sure it's a list. 
     if type(ko) == str:
@@ -98,9 +102,13 @@ def get_by_ko(ko,
     if len(cols) < 1:
         raise ValueError('At least one column must be specified.')
     
-    url, headers = generate_url(cols, {'ko':ko}, 'get', page=page)
+    url, headers = generate_url(cols, {'ko':ko}, 'get')
     response = requests.get(url, headers=headers)
-    
+ 
+    if response.status_code == 500: # In case of an error...
+        print(response.text)
+        return None
+   
     if as_df:
         return to_df(response, print_sql_query=True)
     else:
@@ -113,7 +121,13 @@ def get_by_gene_name(gene_name,
         page=0,
         as_df=True):
     '''
+    Get results from the database corresponding to a particular gene_name
+    target. Only returns 100 results. 
     '''
+    if (page is None) and sequence:
+        msg = 'When grabbing sequences from the database, a page must be specified.'
+        raise ValueError(msg)
+
     # Can be either be a string or a list of strings; make sure it's a list. 
     if type(gene_name) == str:
         gene_name = [gene_name]
@@ -127,6 +141,10 @@ def get_by_gene_name(gene_name,
     url, headers = generate_url(cols, {'gene_name':gene_name}, 'get', page=page)
     response = requests.get(url, headers=headers)
 
+    if response.status_code == 500: # In case of an error...
+        print(response.text)
+        return None
+
     if as_df:
         return to_df(response, print_sql_query=True)
     else:
@@ -137,9 +155,9 @@ def get_by_genome_id(genome_id,
         gtdb_taxonomy=True, 
         ncbi_taxonomy=False,
         ssu_gg_taxonomy=False,
-        as_df=True,
-        page=0):
+        as_df=True):
     '''
+    Gets all results from the database for a particular genome_id. 
     '''
     # Can be either be a string or a list of strings; make sure it's a list. 
     if type(genome_id) == str:
@@ -155,9 +173,13 @@ def get_by_genome_id(genome_id,
     if ssu_gg_taxonomy:
         cols += [f'ssu_gg_{t}' for t in taxonomy]
 
-    url, headers = generate_url(cols, {'gene_name':genome_id}, 'get', page=page)
+    url, headers = generate_url(cols, {'genome_id':genome_id}, 'get')
     response = requests.get(url, headers=headers)
-    
+ 
+    if response.status_code == 500: # In case of an error...
+        print(response.text)
+        return None
+   
     if as_df:
         return to_df(response, print_sql_query=True)
     else:
@@ -171,6 +193,6 @@ def info():
     url = f'http://{host}/info'
     result = requests.get(url).text
 
-    return result
+    print(result)
 
 
