@@ -1,5 +1,5 @@
 from setuptools import setup, find_packages
-print(find_packages())
+
 setup(
     name='Find-A-Bug API',
     # version='0.1',    
