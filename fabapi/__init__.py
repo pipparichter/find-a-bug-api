@@ -60,7 +60,7 @@ def get_genome_id_with_gene_id(gene_id:str, verbose:bool=False) -> pd.DataFrame:
     return data.genome_id.item()
 
 
-def get_gtdb_taxonomy_with_genome_id(genome_id:str) -> pd.DataFrame:
+def get_gtdb_taxonomy(genome_id:str) -> pd.DataFrame:
 
     fields = ['gtdb_domain', 'gtdb_class', 'gtdb_family', 'gtdb_order', 'gtdb_phylum', 'gtdb_genus', 'gtdb_species']
     filters = {'genome_id':[genome_id]}
