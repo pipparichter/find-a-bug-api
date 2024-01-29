@@ -1,7 +1,7 @@
-fabapi package
+fabapi 
 ==============
 
-Module contents
+functions
 ---------------
 
 .. automodule:: fabapi
