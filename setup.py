@@ -8,5 +8,5 @@ setup(
     author='Philippa Richter',
     author_email='prichter@caltech.edu',
     packages=['fabapi'],
-    install_requires=find_packages(exclude=['fabapi']))
+    install_requires=['requests', 'pandas'])
 

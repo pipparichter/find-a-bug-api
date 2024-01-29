@@ -16,4 +16,4 @@ It's best practice to work within a `conda` (or equivalent) Python environment; 
 
 ## Usage
 
-Before accessing the Find-A-Bug database, you **must be connected to Caltech wifi** (or using the VPN). Instructions for connecting to the VPN can be found on the Caltech [website](https://www.imss.caltech.edu/services/wired-wireless-remote-access/Virtual-Private-Network-VPN). For more a more detailed usage guide, see the `demo.ipynb` notebook in the `notebooks` directory.
+Before accessing the Find-A-Bug database, you **must be connected to Caltech wifi** (or using the VPN). Instructions for connecting to the VPN can be found on the Caltech [website](https://www.imss.caltech.edu/services/wired-wireless-remote-access/Virtual-Private-Network-VPN). For more a more detailed usage guide, see the Find-A-Bug User Guide.  
