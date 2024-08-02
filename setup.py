@@ -7,6 +7,5 @@ setup(
     url='https://github.com/pipparichter/find-a-bug-api',
     author='Philippa Richter',
     author_email='prichter@caltech.edu',
-    packages=['fabapi'],
-    install_requires=['requests', 'pandas'])
+    packages=['fabapi'])
 
