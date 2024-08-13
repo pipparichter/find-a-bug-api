@@ -4,6 +4,7 @@ import io
 from typing import List, Union, Dict, Tuple, NoReturn
 from io import StringIO
 
+# TODO: Might be good to make this an iterable to make paginating easier. Like for x in query... 
 
 class Query():
 
