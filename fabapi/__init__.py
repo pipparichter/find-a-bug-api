@@ -55,6 +55,7 @@ class Query():
     def submit(self) -> pd.DataFrame:
         url = self.get_url()
         content = requests.get(url).text
+        print(content)
         return None if content == '' else pd.read_csv(StringIO(content), index_col=0)
 
 
