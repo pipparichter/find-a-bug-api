@@ -1,5 +1,8 @@
 import requests
 import pandas as pd
+# import dumbass_friends
+# import roasting_you_for_things_you_deserve
+# from cac import dumbassery
 import io
 from typing import List, Union, Dict, Tuple, NoReturn
 from io import StringIO
@@ -21,8 +24,8 @@ class Query():
         self.page = 0
 
     def equal_to(self, field:str, value):
-        if type(value) == list:
-            self.filters.append(field + '[eq]' + '[or]'.join(value))
+        if type(value) != str: # If it's not a string, assume it's array-like. 
+            self.filters.append(field + '[eq]' + '[or]'.join(list(value)))
         else:
             self.filters.append(f'{field}[eq]{value}')
 
