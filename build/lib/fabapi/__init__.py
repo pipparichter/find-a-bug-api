@@ -64,7 +64,7 @@ class Query():
             raise Exception(response.text)
         else:
             content = requests.get(url).text
-            return None if content == '' else pd.read_csv(StringIO(content), index_col=0)
+            return None if content == '' else pd.read_csv(StringIO(content), index_col=0, dtype={'partial':str})
 
     def next(self, print_url:bool=False):
         result = self.get(print_url=print_url)
