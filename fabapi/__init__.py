@@ -16,12 +16,13 @@ class Query():
     symbols = ['[to]', '[or]']
     connector = '[and]'
 
-    def __init__(self, table_name:str, fields:List[str]=[]):
+    def __init__(self, table_name:str, fields:List[str]=[], version:int=207):
 
         self.filters = []
         self.fields = fields
-        self.table_name = table_name
+        self.table_name = table_name + f'_r{version}'
         self.page = 0
+        self.version = version
 
     def equal_to(self, field:str, value):
         if type(value) != str: # If it's not a string, assume it's array-like. 
@@ -51,11 +52,10 @@ class Query():
         self.fields.append(field)
 
 
-    def get(self, print_url:bool=False) -> pd.DataFrame:
+    def get(self, print_url:bool=False, page:int=0) -> pd.DataFrame:
         url = Query.base_url + 'get/' + self.table_name + '?'
-        url = url + Query.connector.join(self.fields)
-        url = url + Query.connector.join(self.filters)
-        url = url + f'[page]{self.page}' # Add the page number. 
+        url = url + Query.connector.join(self.fields + self.filters)
+        url = url + f'[page]{page}' # Add the page number. 
 
         if print_url: print(url)
 
@@ -67,15 +67,19 @@ class Query():
             # The partial field will get interpreted as an integer unless stated otherwise.g
             return None if content == '' else pd.read_csv(StringIO(content), index_col=0, dtype={'partial':str})
 
-    def next(self, print_url:bool=False):
-        result = self.get(print_url=print_url)
-        self.page += 1
-        return result 
+
+    def __iter__(self):
+        '''Implements an iterator interface for easier pagination.'''
+        result = pd.DataFrame()
+        self.page = 0
+        while (result is not None):
+            result = self.get(page=self.page) 
+            self.page += 1
+            yield result
 
     def count(self, print_url:bool=False) -> pd.DataFrame:
         url = Query.base_url + 'count/' + self.table_name + '?'
-        url = url + Query.connector.join(self.fields)
-        url = url + Query.connector.join(self.filters)
+        url = url + Query.connector.join(self.fields + self.filters)
         
         if print_url: print(url)
 

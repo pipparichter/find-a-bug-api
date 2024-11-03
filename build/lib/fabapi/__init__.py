@@ -53,8 +53,7 @@ class Query():
 
     def get(self, print_url:bool=False) -> pd.DataFrame:
         url = Query.base_url + 'get/' + self.table_name + '?'
-        url = url + Query.connector.join(self.fields)
-        url = url + Query.connector.join(self.filters)
+        url = url + Query.connector.join(self.fields + self.filters)
         url = url + f'[page]{self.page}' # Add the page number. 
 
         if print_url: print(url)
@@ -64,6 +63,7 @@ class Query():
             raise Exception(response.text)
         else:
             content = requests.get(url).text
+            # The partial field will get interpreted as an integer unless stated otherwise.g
             return None if content == '' else pd.read_csv(StringIO(content), index_col=0, dtype={'partial':str})
 
     def next(self, print_url:bool=False):
@@ -73,8 +73,7 @@ class Query():
 
     def count(self, print_url:bool=False) -> pd.DataFrame:
         url = Query.base_url + 'count/' + self.table_name + '?'
-        url = url + Query.connector.join(self.fields)
-        url = url + Query.connector.join(self.filters)
+        url = url + Query.connector.join(self.fields + self.filters)
         
         if print_url: print(url)
 
